@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../helpers/tokens");
 const { sendVerificationEmail } = require("../helpers/mailer");
+const Post = require("../models/Post");
 exports.register = async (req, res) => {
   try {
     const {
@@ -133,6 +134,110 @@ exports.login = async (req, res) => {
       verified: user.verified,
       message: "Register Success ! please activate your email to start",
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getProfile = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findById(req.user.id);
+    const profile = await User.findOne({ username }).select("-password");
+    const relationShipObject = {
+      follower: false,
+      following: false,
+    };
+    if (!profile) {
+      return res.json({ ok: false });
+    }
+    if (user.following.includes(profile._id)) {
+      relationShipObject.following = true;
+    }
+    if (user.followers.includes(profile._id)) {
+      relationShipObject.follower = true;
+    }
+    const posts = await Post.find({ user: profile._id }).populate("user");
+    res.json({ ...profile.toObject(), posts, relationShipObject });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.search = async (req, res) => {
+  try {
+    const searchTerm = req.params.searchTerm;
+    const results = await User.find({ $text: { $search: searchTerm } }).select(
+      "first_name last_name username picture"
+    );
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.follow = async (req, res) => {
+  try {
+    if (req.user.id !== req.params.id) {
+      const ownProfile = await User.findById(req.user.id);
+      const followingProfile = await User.findById(req.params.id);
+      if (
+        !followingProfile.followers.includes(ownProfile._id) &&
+        !ownProfile.following.includes(followingProfile._id)
+      ) {
+        await followingProfile.updateOne({
+          $push: { followers: ownProfile._id },
+        });
+
+        await ownProfile.updateOne({
+          $push: { following: followingProfile._id },
+        });
+        res.json({ message: "follow success" });
+      } else {
+        return res.status(400).json({ message: "Already following" });
+      }
+    } else {
+      return res.status(400).json({ message: "You can't follow yourself" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.unfollow = async (req, res) => {
+  try {
+    if (req.user.id !== req.params.id) {
+      const ownProfile = await User.findById(req.user.id);
+      const unfollowingProfile = await User.findById(req.params.id);
+      if (
+        unfollowingProfile.followers.includes(ownProfile._id) &&
+        ownProfile.following.includes(unfollowingProfile._id)
+      ) {
+        await unfollowingProfile.updateOne({
+          $pull: { followers: ownProfile._id },
+        });
+
+        await ownProfile.updateOne({
+          $pull: { following: unfollowingProfile._id },
+        });
+        res.json({ message: "unfollow success" });
+      } else {
+        return res.status(400).json({ message: "Already not following" });
+      }
+    } else {
+      return res.status(400).json({ message: "You can't unfollow yourself" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getRelationsPageInfos = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("following followers")
+      .populate("following", "first_name last_name picture username")
+      .populate("followers", "first_name last_name picture username");
+    console.log(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

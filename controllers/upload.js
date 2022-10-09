@@ -23,6 +23,22 @@ exports.uploadImages = async (req, res) => {
   }
 };
 
+exports.listImages = async (req, res) => {
+  const { path, sort, max } = req.body;
+
+  cloudinary.v2.search
+    .expression(`${path}`)
+    .sort_by("created_at", `${sort}`)
+    .max_results(max)
+    .execute()
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err.error.message);
+    });
+};
+
 const uploadToCloudinary = async (file, path) => {
   return new Promise((resolve) => {
     cloudinary.v2.uploader.upload(
