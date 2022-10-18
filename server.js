@@ -13,7 +13,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://momentswebapp.netlify.app",
+    origin: process.env.BASE_URL,
   },
 });
 app.use(cors());
