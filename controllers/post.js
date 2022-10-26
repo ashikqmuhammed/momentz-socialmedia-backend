@@ -20,7 +20,50 @@ const getAllPosts = async (req, res) => {
   }
 };
 
+const like = async (req, res) => {
+  try {
+    const { postId } = req.body;
+    const post = await Post.findById(postId);
+    if (post.likes.includes(req.user.id)) {
+      await Post.findByIdAndUpdate(postId, {
+        $pull: { likes: req.user.id },
+      });
+      return res.json({ status: "ok" });
+    } else {
+      await Post.findByIdAndUpdate(postId, {
+        $push: { likes: req.user.id },
+      });
+      res.json({ status: "ok" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const galleryPosts = async (req, res) => {
+  try {
+    const galleryPosts = await Post.find();
+    res.json(galleryPosts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const comment = async (req, res) => {
+  try {
+    const { postId, comment } = req.body;
+    await Post.findByIdAndUpdate(postId, {
+      $push: { comments: { comment, commentBy: req.user.id } },
+    });
+    res.json({ status: "ok" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   createPost,
   getAllPosts,
+  like,
+  galleryPosts,
+  comment,
 };
