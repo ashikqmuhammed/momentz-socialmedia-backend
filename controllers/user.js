@@ -141,7 +141,7 @@ exports.login = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const { username } = req.params;
+    const { username, posttype } = req.params;
     const user = await User.findById(req.user.id);
     const profile = await User.findOne({ username }).select("-password");
     const relationShipObject = {
@@ -157,7 +157,18 @@ exports.getProfile = async (req, res) => {
     if (user.followers.includes(profile._id)) {
       relationShipObject.follower = true;
     }
-    const posts = await Post.find({ user: profile._id }).populate("user");
+    let posts;
+    if (posttype === "ownposts") {
+      posts = await Post.find({ user: profile._id }).populate("user");
+    }
+    if (posttype === "likedposts") {
+      const likedPosts = await Post.find({
+        likes: { $elemMatch: { $eq: req.user.id } },
+      }).populate("user");
+
+      posts = likedPosts;
+    }
+
     res.json({ ...profile.toObject(), posts, relationShipObject });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -212,6 +223,8 @@ exports.unfollow = async (req, res) => {
         unfollowingProfile.followers.includes(ownProfile._id) &&
         ownProfile.following.includes(unfollowingProfile._id)
       ) {
+        console.log(ownProfile._id, "hashim");
+        console.log(unfollowingProfile._id, "pranav");
         await unfollowingProfile.updateOne({
           $pull: { followers: ownProfile._id },
         });
@@ -251,6 +264,32 @@ exports.updateProfilePicture = async (req, res) => {
       picture: url,
     });
     res.json(url);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.followers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const followersPromises = user.followers.map((id) => {
+      return User.findById(id).select("first_name last_name picture gender");
+    });
+    const followers = await Promise.all(followersPromises);
+    res.json(followers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.following = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const followingPromises = user.following.map((id) => {
+      return User.findById(id).select("first_name last_name picture gender");
+    });
+    const following = await Promise.all(followingPromises);
+    res.json(following);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
