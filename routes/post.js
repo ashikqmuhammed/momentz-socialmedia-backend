@@ -5,6 +5,7 @@ const {
   like,
   galleryPosts,
   comment,
+  post,
 } = require("../controllers/post");
 
 const { authUser } = require("../middlewares/auth");
@@ -15,5 +16,6 @@ router.get("/get-all-posts", authUser, getAllPosts);
 router.put("/like", authUser, like);
 router.get("/gallery-posts", authUser, galleryPosts);
 router.patch("/comment", authUser, comment);
+router.get("/post/:postId", authUser, post);
 
 module.exports = router;

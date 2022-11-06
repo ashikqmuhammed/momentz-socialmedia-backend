@@ -60,10 +60,25 @@ const comment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const post = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await Post.findById(postId).populate(
+      "user",
+      "first_name last_name picture"
+    );
+    console.log(post);
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
   like,
   galleryPosts,
   comment,
+  post,
 };
