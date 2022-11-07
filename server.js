@@ -14,7 +14,7 @@ const corsOptions = {
   credentials: true, //access-control-allow-credentials:true
   optionSuccessStatus: 200,
 };
-app.use(cors(corsOptions));
+
 
 app.use(
   fileUpload({
@@ -24,6 +24,8 @@ app.use(
 
 //routes
 readdirSync("./routes").map((r) => app.use("/", require("./routes/" + r)));
+
+app.use(cors(corsOptions));
 
 //database
 mongoose
