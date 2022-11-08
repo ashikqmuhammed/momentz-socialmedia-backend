@@ -60,7 +60,7 @@ readdirSync("./routes").map((r) => app.use("/", require("./routes/" + r)));
 
 //Database
 mongoose
-  .connect(process.env.DATABASE, {
+  .connect(process.env.DATABASE_URL, {
     useNewUrlParser: true,
   })
   .then(() => console.log("Database connected Succesffully"))
