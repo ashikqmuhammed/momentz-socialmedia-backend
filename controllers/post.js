@@ -1,14 +1,32 @@
 const Post = require("../models/Post");
+const User = require("../models/User");
 
 const createPost = async (req, res) => {
   try {
-    const newPost = new Post(req.body).save();
-    res.json(newPost);
+    const newPost =await Post.create(req.body)
+    const newPostPopullated = await Post.findById(newPost._id).populate(
+      "user",
+      "first_name last_name picture username gender"
+    );
+    console.log(newPostPopullated);
+    res.json(newPostPopullated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+const getFollowingPosts = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const followers = [...user.followers, req.user.id];
+    const posts = await Post.find({ user: { $in: followers } })
+      .populate("user", "first_name last_name picture username gender")
+      .sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find()
@@ -81,4 +99,5 @@ module.exports = {
   galleryPosts,
   comment,
   post,
+  getFollowingPosts,
 };
